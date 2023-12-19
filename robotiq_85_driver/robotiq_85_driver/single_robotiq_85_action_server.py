@@ -75,8 +75,8 @@ class Robotiq85ActionServer(Node):
 
         self.get_logger().info("Parameters timeout: %f, position_tolerance: %f, gripper_speed: %f, stroke: %f" % (self._timeout, self._position_tolerance, self._gripper_speed, self._stroke))
 
-        self.create_subscription(GripperStat, "/gripper/stat", self._update_gripper_stat, 10)
-        self._gripper_pub = self.create_publisher(GripperCmd, '/gripper/cmd', 10)
+        self.create_subscription(GripperStat, "gripper/stat", self._update_gripper_stat, 10)
+        self._gripper_pub = self.create_publisher(GripperCmd, 'gripper/cmd', 10)
 
         self._stat = None
 
@@ -85,7 +85,7 @@ class Robotiq85ActionServer(Node):
         self._action_server = ActionServer(
             self,
             GripperCommand,
-            '/robotiq_gripper_controller/gripper_cmd',
+            'robotiq_gripper_controller/gripper_cmd',
             goal_callback=self._goal_callback,
             cancel_callback=self._cancel_callback,
             execute_callback=self._execute_callback,

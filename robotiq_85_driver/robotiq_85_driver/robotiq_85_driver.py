@@ -84,16 +84,16 @@ class Robotiq85Driver(Node):
             return
 
         if (self._num_grippers == 1):
-            self.create_subscription(GripperCmd, "/gripper/cmd", self._update_gripper_cmd, 10)
-            self._gripper_pub = self.create_publisher(GripperStat, '/gripper/stat', 10)
-            self._gripper_joint_state_pub = self.create_publisher(JointState, '/joint_states', 10)
+            self.create_subscription(GripperCmd, "gripper/cmd", self._update_gripper_cmd, 10)
+            self._gripper_pub = self.create_publisher(GripperStat, 'gripper/stat', 10)
+            self._gripper_joint_state_pub = self.create_publisher(JointState, 'joint_states', 10)
         elif (self._num_grippers == 2):
-            self.create_subscription(GripperCmd, "/left_gripper/cmd", self._update_gripper_cmd, 10)
-            self._left_gripper_pub = self.create_publisher(GripperStat, '/left_gripper/stat', 10)
-            self._left_gripper_joint_state_pub = self.create_publisher(JointState, '/left_gripper/joint_states', 10)
-            self.create_subscription(GripperCmd, "/right_gripper/cmd", self._update_right_gripper_cmd, 10)
-            self._right_gripper_pub = self.create_publisher(GripperStat, '/right_gripper/stat', 10)
-            self._right_gripper_joint_state_pub = self.create_publisher(JointState, '/right_gripper/joint_states', 10)
+            self.create_subscription(GripperCmd, "left_gripper/cmd", self._update_gripper_cmd, 10)
+            self._left_gripper_pub = self.create_publisher(GripperStat, 'left_gripper/stat', 10)
+            self._left_gripper_joint_state_pub = self.create_publisher(JointState, 'left_gripper/joint_states', 10)
+            self.create_subscription(GripperCmd, "right_gripper/cmd", self._update_right_gripper_cmd, 10)
+            self._right_gripper_pub = self.create_publisher(GripperStat, 'right_gripper/stat', 10)
+            self._right_gripper_joint_state_pub = self.create_publisher(JointState, 'right_gripper/joint_states', 10)
         else:
             self.get_logger().error("Number of grippers not supported (needs to be 1 or 2)")
             return

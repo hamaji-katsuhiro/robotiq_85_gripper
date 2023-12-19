@@ -68,13 +68,13 @@ class Robotiq85GripperTestClose(Node):
         self.close = self.get_parameter('close').get_parameter_value().bool_value
 
         if (self._num_grippers == 1):
-            self.create_subscription(GripperStat, "/gripper/stat", self._update_gripper_stat, 10)
-            self._gripper_pub = self.create_publisher(GripperCmd, '/gripper/cmd', 10)
+            self.create_subscription(GripperStat, "gripper/stat", self._update_gripper_stat, 10)
+            self._gripper_pub = self.create_publisher(GripperCmd, 'gripper/cmd', 10)
         elif (self._num_grippers == 2):
-            self.create_subscription(GripperStat, "/left_gripper/stat", self._update_gripper_stat, 10)
-            self._left_gripper_pub = self.create_publisher(GripperCmd, '/left_gripper/stat', 10)
-            self.create_subscription(GripperStat, "/right_gripper/stat", self._update_right_gripper_stat, 10)
-            self._right_gripper_pub = self.create_publisher(GripperCmd, '/right_gripper/cmd', 10)
+            self.create_subscription(GripperStat, "left_gripper/stat", self._update_gripper_stat, 10)
+            self._left_gripper_pub = self.create_publisher(GripperCmd, 'left_gripper/stat', 10)
+            self.create_subscription(GripperStat, "right_gripper/stat", self._update_right_gripper_stat, 10)
+            self._right_gripper_pub = self.create_publisher(GripperCmd, 'right_gripper/cmd', 10)
         else:
             self.get_logger().error("Number of grippers not supported (needs to be 1 or 2)")
             return
