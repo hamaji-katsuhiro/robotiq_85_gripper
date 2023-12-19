@@ -63,13 +63,17 @@ class Robotiq85ActionServer(Node):
     def __init__(self):
         super().__init__('single_robotiq_85_action_server')
 
-        self.declare_parameter('timeout', 5.0)            
-        self.declare_parameter('position_tolerance', 0.005) 
-        self.declare_parameter('gripper_speed', 0.0565)   
+        self.declare_parameter('timeout', 5.0)
+        self.declare_parameter('position_tolerance', 0.005)
+        self.declare_parameter('gripper_speed', 0.0565)
+        self.declare_parameter('stroke', 0.085)
 
         self._timeout = self.get_parameter('timeout').get_parameter_value().double_value
         self._position_tolerance = self.get_parameter('position_tolerance').get_parameter_value().double_value
         self._gripper_speed = self.get_parameter('gripper_speed').get_parameter_value().double_value
+        self._stroke = self.get_parameter('stroke').get_parameter_value().double_value
+
+        self.get_logger().info("Parameters timeout: %f, position_tolerance: %f, gripper_speed: %f, stroke: %f" % (self._timeout, self._position_tolerance, self._gripper_speed, self._stroke))
 
         self.create_subscription(GripperStat, "/gripper/stat", self._update_gripper_stat, 10)
         self._gripper_pub = self.create_publisher(GripperCmd, '/gripper/cmd', 10)
@@ -120,13 +124,13 @@ class Robotiq85ActionServer(Node):
         self.get_logger().debug('Gripper executing goal...')
 
         # Approximately convert angular joint position at knuckle to linear distance between jaws
-        gripper_jaw_distance = min(max(0.085 - (0.085/0.8) * goal_handle.request.command.position, 0.0), 0.8)
+        gripper_jaw_distance = min(max(self._stroke - (self._stroke/0.8) * goal_handle.request.command.position, 0.0), 0.8)
 
         self.get_logger().debug('Angle: ' + str(goal_handle.request.command.position) + ' Distance: ' + str(gripper_jaw_distance))
 
-        # Send goal to gripper 
+        # Send goal to gripper
         cmd_msg = GripperCmd()
-        cmd_msg.position = gripper_jaw_distance
+        cmd_msg.position = goal_handle.request.command.position
 
         cmd_msg.force = goal_handle.request.command.max_effort
         cmd_msg.speed = self._gripper_speed
@@ -142,7 +146,7 @@ class Robotiq85ActionServer(Node):
         while rclpy.ok():
             dt = self.get_time() - start_time
             # print("cb:", dt)
-            
+
             if not (dt < self._timeout):
                 self.get_logger().warn('Gripper timeout reached')
                 break
@@ -156,7 +160,7 @@ class Robotiq85ActionServer(Node):
                 feedback_msg.stalled = not self._stat.is_moving
 
                 # Position tolerance achieved or object grasped
-                if (fabs(gripper_jaw_distance - feedback_msg.position) < self._position_tolerance or self._stat.obj_detected):
+                if (fabs(goal_handle.request.command.position - feedback_msg.position) < self._position_tolerance or self._stat.obj_detected):
                     feedback_msg.reached_goal = True
                     self.get_logger().debug('Goal achieved: %r'% feedback_msg.reached_goal)
 
@@ -165,7 +169,7 @@ class Robotiq85ActionServer(Node):
                 if feedback_msg.reached_goal:
                     self.get_logger().debug('Reached goal, exiting loop')
                     break;
-  
+
             rate.sleep()
 
         result_msg = GripperCommand.Result()

@@ -57,7 +57,7 @@ SPEED_INDEX    = 11
 FORCE_INDEX    = 12
 
 class GripperIO:
-    def __init__(self,device):
+    def __init__(self,device, stroke):
         self.device = device+9
         self.rPR = 0
         self.rSP = 255
@@ -87,6 +87,7 @@ class GripperIO:
         self.stat_cmd = [self.device, 0x03, 0x07, 0xD0, 0x00, 0x08]
         compute_modbus_rtu_crc(self.stat_cmd)
         self.stat_cmd_bytes = array.array('B',self.stat_cmd).tobytes()
+        self._stroke = stroke
 
     def activate_gripper(self):
         self.rACT = 1
@@ -114,7 +115,7 @@ class GripperIO:
     def goto(self, pos, vel, force):
         self.rACT = 1
         self.rGTO = 1
-        self.rPR = int(np.clip((3.-230.)/0.085 * pos + 230., 0, 255))
+        self.rPR = int(np.clip((3.-230.)/self._stroke * pos + 230., 0, 255))
         self.rSP = int(np.clip(255./(0.1-0.013) * vel-0.013, 0, 255))
         self.rFR = int(np.clip(255./(220.-5.) * force-5., 0, 255))
         self._update_cmd()
@@ -157,11 +158,11 @@ class GripperIO:
 
     def get_pos(self):
         po = float(self.gPO)
-        return np.clip(0.085/(3.-230.)*(po-230.), 0, 0.085)
+        return np.clip(self._stroke/(3.-230.)*(po-230.), 0, self._stroke)
 
     def get_req_pos(self):
         pr = float(self.gPR)
-        return np.clip(0.085/(3.-230.)*(pr-230.), 0, 0.085)
+        return np.clip(self._stroke/(3.-230.)*(pr-230.), 0, self._stroke)
 
     def get_current(self):
         return self.gCU * 0.1

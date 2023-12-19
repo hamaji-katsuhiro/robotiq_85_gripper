@@ -50,6 +50,7 @@ arising out of or based upon:
 
 import numpy as np
 import sys
+import time
 
 import rclpy
 from rclpy.node import Node
@@ -66,15 +67,17 @@ class Robotiq85Driver(Node):
 
         self.declare_parameter('num_grippers', 1)
         self.declare_parameter('comport', '/dev/ttyUSB0')
-        self.declare_parameter('baud', '115200')
+        self.declare_parameter('baud', 115200)
+        self.declare_parameter('stroke', 0.085)
 
         self._num_grippers = self.get_parameter('num_grippers').get_parameter_value().integer_value
         self._comport = self.get_parameter('comport').get_parameter_value().string_value
-        self._baud = self.get_parameter('baud').get_parameter_value().string_value
-        
-        self.get_logger().info("Parameters Num gippers: %i, Comport: %s, Baud rate: %s " % (self._num_grippers, self._comport, self._baud))
+        self._baud = self.get_parameter('baud').get_parameter_value().integer_value
+        self._stroke = self.get_parameter('stroke').get_parameter_value().double_value
 
-        self._gripper = Robotiq85Gripper(self._num_grippers, self._comport, self._baud)
+        self.get_logger().info("Parameters Num gippers: %i, Comport: %s, Baud rate: %s, stroke: %f" % (self._num_grippers, self._comport, self._baud, self._stroke))
+
+        self._gripper = Robotiq85Gripper(self._num_grippers, self._comport, self._baud, self._stroke)
 
         if not self._gripper.init_success:
             self.get_logger().error("Unable to open commport to %s: " % self._comport)
@@ -101,6 +104,7 @@ class Robotiq85Driver(Node):
         self._driver_ready = False
 
         success = True
+        time.sleep(1)
         for i in range(self._num_grippers):
             success &= self._gripper.process_stat_cmd(i)
             if not success:
@@ -111,7 +115,7 @@ class Robotiq85Driver(Node):
 
         self._last_time = self.get_time()
 
-        # # 100 Hz timer 
+        # # 100 Hz timer
         self.timer = self.create_timer(0.01, self._timer_callback)
 
     def __del__(self):
@@ -146,7 +150,7 @@ class Robotiq85Driver(Node):
         if (True == cmd.stop):
             self._gripper.stop()
         else:
-            pos = self._clamp_cmd(cmd.position,0.0,0.085)
+            pos = self._clamp_cmd(cmd.position,0.0,self._stroke)
             vel = self._clamp_cmd(cmd.speed,0.013,0.1)
             force = self._clamp_cmd(cmd.force,5.0,220.0)
             self._gripper.goto(dev=0,pos=pos,vel=vel,force=force)
@@ -162,7 +166,7 @@ class Robotiq85Driver(Node):
         if (True == cmd.stop):
             self._gripper.stop(dev=1)
         else:
-            pos = self._clamp_cmd(cmd.position,0.0,0.085)
+            pos = self._clamp_cmd(cmd.position,0.0,self._stroke)
             vel = self._clamp_cmd(cmd.speed,0.013,0.1)
             force = self._clamp_cmd(cmd.force,5.0,220.0)
             self._gripper.goto(dev=1,pos=pos,vel=vel,force=force)
@@ -187,7 +191,7 @@ class Robotiq85Driver(Node):
         js.header.frame_id = ''
         js.header.stamp = self.get_clock().now().to_msg()
         js.name = ['robotiq_85_left_knuckle_joint']
-        pos = np.clip(0.8 - ((0.8/0.085) * self._gripper.get_pos(dev)), 0., 0.8)
+        pos = np.clip(0.8 - ((0.8/self._stroke) * self._gripper.get_pos(dev)), 0., 0.8)
         js.position = [pos]
         dt = self.get_time() - self._prev_js_time[dev]
         self._prev_js_time[dev] = self.get_time()
@@ -249,6 +253,7 @@ def main(args=None):
     except ExternalShutdownException:
         sys.exit(1)
     finally:
+        node.shutdown()
         node.destroy_node()
         rclpy.try_shutdown()
 
